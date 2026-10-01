@@ -328,7 +328,7 @@ def get_gst():
         return jsonify({
             "status": "error",
             "message": "GST number required",
-            "usage": "/gst?code=09AAYFK4129N1ZF&key=AK47ADF",
+            "usage": "/gst?code=09AAYFK4129N1ZF&key=your_api_key",
             "credit": {"username": "@KINGFFAIAK47x", "made_by": "ANSH AFT"}
         }), 400
     
