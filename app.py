@@ -130,10 +130,8 @@ def fetch_from_sandbox(gstin):
         if r.status_code != 200:
             return None
         data = r.json()
-        # Recursively find the actual GST object
         def find_gst_obj(obj):
             if isinstance(obj, dict):
-                # अगर इस dict में gstin जैसी कोई key है
                 keys_lower = [k.lower() for k in obj.keys()]
                 if any(k in keys_lower for k in ["gstin", "lgnm", "trade_name", "tradename", "legal_name"]):
                     return obj
@@ -157,27 +155,17 @@ def fetch_from_sandbox(gstin):
 # ==============================================
 
 def deep_merge(a, b):
-    """
-    दोनों dicts को deep merge करें।
-    a की value प्राथमिक, अगर खाली हो तो b से लें।
-    Nested dicts और lists को भी merge करें।
-    """
     if not isinstance(a, dict):
         a = {}
     if not isinstance(b, dict):
         b = {}
-    
     result = {}
     all_keys = set(a.keys()) | set(b.keys())
-    
     for key in all_keys:
         av = a.get(key)
         bv = b.get(key)
-        
-        # अगर दोनों dict हैं -> recursive merge
         if isinstance(av, dict) and isinstance(bv, dict):
             result[key] = deep_merge(av, bv)
-        # अगर दोनों list हैं -> unique items merge
         elif isinstance(av, list) and isinstance(bv, list):
             merged_list = []
             for item in av + bv:
@@ -185,30 +173,21 @@ def deep_merge(a, b):
                     merged_list.append(item)
             result[key] = merged_list
         else:
-            # जो value खाली न हो वो चुनें
             def is_empty(v):
                 return v is None or v == "" or v == 0 or v == "0" or v == "0000-00-00"
-            
             if not is_empty(av):
                 result[key] = av
             elif not is_empty(bv):
                 result[key] = bv
             else:
                 result[key] = av if av is not None else bv
-    
     return result
 
 
 def normalize_keys(raw):
-    """
-    अलग-अलग API के key names को एक स्टैंडर्ड फॉर्म में लाएं,
-    लेकिन साथ ही ओरिजिनल keys भी रखें (ताकि कोई डेटा न छूटे)।
-    """
     if not isinstance(raw, dict):
         return {}
-    
     lower_map = {k.lower(): v for k, v in raw.items()}
-    
     def get(*keys):
         for k in keys:
             if k in raw:
@@ -216,39 +195,34 @@ def normalize_keys(raw):
             if k.lower() in lower_map:
                 return lower_map[k.lower()]
         return None
-    
-    # स्टैंडर्ड फील्ड्स (जो हम हमेशा दिखाना चाहते हैं)
     standard = {
-        "Gstin":              get("Gstin", "gstin", "gst_number", "gstin_no"),
-        "TradeName":          get("TradeName", "trade_name", "tradename", "tradeNam", "business_name"),
-        "LegalName":          get("LegalName", "legal_name", "legalname", "lgnm"),
-        "BusinessType":       get("business_type", "BusinessType", "ctb", "constitution_of_business"),
-        "NatureOfBusiness":   get("nature_of_business", "NatureOfBusiness", "nob"),
-        "Status":             get("Status", "status", "sts"),
-        "BlkStatus":          get("BlkStatus", "blk_status", "block_status", "blkstatus"),
-        "TxpType":            get("TxpType", "txp_type", "taxpayer_type", "dty", "taxpayerType"),
-        "DtReg":              get("DtReg", "dt_reg", "registration_date", "rgdt"),
-        "DtDReg":             get("DtDReg", "dt_dreg", "date_cancel", "cxdt", "de_registration_date"),
-        "LastUpdated":        get("last_updated", "LastUpdated"),
-        "Jurisdiction":       get("jurisdiction", "Jurisdiction"),
-        "EinvoiceStatus":     get("einvoice_status", "EinvoiceStatus"),
-        "District":           get("district", "District"),
-        "State":              get("state", "State"),
-        "Pincode":            get("pincode", "Pincode", "AddrPncd", "addr_pncd", "pncd"),
-        "StateCode":          get("StateCode", "state_code", "statecode", "stcd"),
-        "AddrBnm":            get("AddrBnm", "addr_bnm", "bnm", "building_name"),
-        "AddrBno":            get("AddrBno", "addr_bno", "bno", "building_number"),
-        "AddrFlno":           get("AddrFlno", "addr_flno", "flno", "floor_number"),
-        "AddrSt":             get("AddrSt", "addr_st", "st", "street"),
-        "AddrLoc":            get("AddrLoc", "addr_loc", "loc", "location", "locality"),
+        "Gstin":            get("Gstin", "gstin", "gst_number", "gstin_no"),
+        "TradeName":        get("TradeName", "trade_name", "tradename", "tradeNam", "business_name"),
+        "LegalName":        get("LegalName", "legal_name", "legalname", "lgnm"),
+        "BusinessType":     get("business_type", "BusinessType", "ctb", "constitution_of_business"),
+        "NatureOfBusiness": get("nature_of_business", "NatureOfBusiness", "nob"),
+        "Status":           get("Status", "status", "sts"),
+        "BlkStatus":        get("BlkStatus", "blk_status", "block_status", "blkstatus"),
+        "TxpType":          get("TxpType", "txp_type", "taxpayer_type", "dty", "taxpayerType"),
+        "DtReg":            get("DtReg", "dt_reg", "registration_date", "rgdt"),
+        "DtDReg":           get("DtDReg", "dt_dreg", "date_cancel", "cxdt", "de_registration_date"),
+        "LastUpdated":      get("last_updated", "LastUpdated"),
+        "Jurisdiction":     get("jurisdiction", "Jurisdiction"),
+        "EinvoiceStatus":   get("einvoice_status", "EinvoiceStatus"),
+        "District":         get("district", "District"),
+        "State":            get("state", "State"),
+        "Pincode":          get("pincode", "Pincode", "AddrPncd", "addr_pncd", "pncd"),
+        "StateCode":        get("StateCode", "state_code", "statecode", "stcd"),
+        "AddrBnm":          get("AddrBnm", "addr_bnm", "bnm", "building_name"),
+        "AddrBno":          get("AddrBno", "addr_bno", "bno", "building_number"),
+        "AddrFlno":         get("AddrFlno", "addr_flno", "flno", "floor_number"),
+        "AddrSt":           get("AddrSt", "addr_st", "st", "street"),
+        "AddrLoc":          get("AddrLoc", "addr_loc", "loc", "location", "locality"),
     }
-    
-    # ओरिजिनल raw भी रखें (कोई डेटा न छूटे)
     result = dict(raw)
     for k, v in standard.items():
         if v not in (None, "", 0, "0", [], {}):
             result[k] = v
-    
     return result
 
 
@@ -260,34 +234,22 @@ def get_gst_info(gst):
     is_valid, result = validate_gst(gst)
     if not is_valid:
         return {"status": "error", "message": result, "gst": gst}
-    
     gst_clean = result
-    
     m2h_raw = fetch_from_m2hgamerz(gst_clean) or {}
     sandbox_raw = fetch_from_sandbox(gst_clean) or {}
-    
     if not m2h_raw and not sandbox_raw:
         return {
             "status": "error",
             "message": "No data found from any source",
             "gst": gst_clean
         }
-    
-    # Normalize दोनों को
     m2h_norm = normalize_keys(m2h_raw)
     sandbox_norm = normalize_keys(sandbox_raw)
-    
-    # Deep merge (सारे nested फील्ड्स सहित)
     merged = deep_merge(m2h_norm, sandbox_norm)
-    
     return {
         "status": "success",
         "gst": gst_clean,
         "data": merged,
-        "sources": {
-            "m2hgamerz": "success" if m2h_raw else "failed",
-            "sandbox": "success" if sandbox_raw else "failed"
-        },
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
     }
 
@@ -299,16 +261,10 @@ def get_gst_info(gst):
 def format_gst_response(data):
     if not data:
         return None
-    
-    # सारे फील्ड्स जो भी हैं, raw में डाल दें
     raw = {k: v for k, v in data.items() if v not in (None, "", [], {})}
-    
-    # Address को अलग निकालें
     address = data.get("address") or {}
     if not isinstance(address, dict):
         address = {}
-    
-    # अगर address dict में नहीं है तो Addr* फील्ड्स से बनाएं
     if not address:
         addr_parts = {}
         for std, orig in [
@@ -321,7 +277,6 @@ def format_gst_response(data):
                 addr_parts[std] = v
         if addr_parts:
             address = addr_parts
-    
     return {
         "raw": raw,
         "address": address or None,
@@ -352,12 +307,12 @@ def home():
     return jsonify({
         "service": "🏢 GST Info API (Full Data Collector)",
         "version": "4.0.0",
-        "description": "Get ALL GST information from M2HGamerz + Sandbox.co.in (deep merged)",
+        "description": "Get ALL GST information  (ACX)",
         "endpoint": {
             "/gst": {
                 "method": "GET",
                 "description": "Get full GST information",
-                "example": "/gst?code=09AAYFK4129N1ZF&key=AK47ADF"
+                "example": "/gst?code=09AAYFK4129N1ZF&key=your_api_key"
             }
         },
         "credit": {"username": "@KINGFFAIAK47x", "made_by": "ANSH AFT"}
@@ -385,7 +340,6 @@ def get_gst():
             "status": "success",
             "gst": gst,
             "data": formatted,
-            "sources": result.get('sources', {}),
             "timestamp": result['timestamp'],
             "credit": {"username": "@KINGFFAIAK47x", "made_by": "ANSH AFT"}
         })
